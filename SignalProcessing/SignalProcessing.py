@@ -70,7 +70,7 @@ save_plot(freq_shift, spectrum_shifted,
 
 
 
-#Новий код з практичної роботи 3
+#Код з практичної роботи 3
 def save_grid_plot(data_list, x_axis, titles, suptitle, xlabel, ylabel, filename):
     width_inch = 21 / 2.54
     height_inch = 14 / 2.54
@@ -147,7 +147,7 @@ plt.xlabel('Крок дискретизації Dt', fontsize=14)
 plt.ylabel('Дисперсія', fontsize=14)
 plt.title('Залежність дисперсії від кроку дискретизації', fontsize=14)
 plt.grid(True, linestyle='--', alpha=0.6)
-plt.savefig(f'{figures_dir}/variance_vs_dt.png', dpi=600, bbox_inches='tight')
+plt.savefig(f'{figures_dir}/var_vs_dt.png', dpi=600, bbox_inches='tight')
 plt.close()
 
 #5 Залежність сигнал-шум від кроку дискретизації
@@ -158,4 +158,95 @@ plt.ylabel('ССШ', fontsize=14)
 plt.title('Залежність співвідношення сигнал-шум від кроку дискретизації', fontsize=14)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.savefig(f'{figures_dir}/ssh_vs_dt.png', dpi=600, bbox_inches='tight')
+plt.close()
+
+
+
+#Новий код з практичної роботи 4
+#Квантування для різних M
+M_values = [4, 16, 64, 256]  #кількість рівнів квантування
+quantized_signals = []  #збереження квантованих сигналів
+var_errors = []  #дисперсія помилки квантування
+snr_values = []  #відношення сигнал/шум
+
+for M in M_values:
+    #1 Крок квантування
+    delta = (np.max(filt_signal) - np.min(filt_signal)) / (M - 1)
+
+    #2 Квантування сигналу
+    quant_signal = delta * np.round(filt_signal / delta)
+    quantized_signals.append(quant_signal)
+
+    #3 Квантовані рівні
+    quant_levels = np.arange(np.min(quant_signal), np.max(quant_signal) + delta, delta)
+
+    #4 Бітові коди для рівнів
+    bits_per_sample = int(np.log2(M))
+    bit_codes = [format(i, f'0{bits_per_sample}b') for i in range(M)]
+
+    #5 Таблиця квантування
+    quant_levels_trunc = quant_levels[:M]
+    table_data = np.column_stack((quant_levels_trunc, bit_codes))
+
+    #Побудова таблиці
+    fig, ax = plt.subplots(figsize=(14 / 2.54, M / 2.54))
+    table = ax.table(cellText=table_data, colLabels=['Значення сигналу', 'Кодова послідовність'], loc='center')
+    table.set_fontsize(14)
+    table.scale(1, 2)
+    ax.axis('off')
+    plt.savefig(f'{figures_dir}/quant_table_M{M}.png', dpi=600, bbox_inches='tight')
+    plt.close(fig)
+
+    #6 Перетворення квантованого сигналу в бітову послідовність
+    bits = []
+    for val in quant_signal:
+        idx = np.argmin(np.abs(quant_levels_trunc - val))
+        bits.append(bit_codes[idx])
+
+    bits_flat = [int(bit) for code in bits for bit in code]
+
+    #7 Побудова графіку бітової послідовності
+    x_bits = np.arange(len(bits_flat))
+    fig, ax = plt.subplots(figsize=(21 / 2.54, 14 / 2.54))
+    ax.step(x_bits, bits_flat, linewidth=0.1, where='post')
+    ax.set_xlabel('Амплітуда сигналу', fontsize=14)
+    ax.set_ylabel('Біти', fontsize=14)
+    ax.set_title(f'Кодова послідовність сигналу при кількості рівнів квантування (M={M}, {bits_per_sample})', fontsize=14)
+    ax.set_ylim(-0.1, 1.1)
+    ax.grid(True, linestyle='--', alpha=0.6)
+    plt.savefig(f'{figures_dir}/bit_seq_M{M}.png', dpi=600, bbox_inches='tight')
+    plt.close(fig)
+
+    #8. Дисперсія та відношення
+    error = quant_signal - filt_signal
+    var_err = np.var(error)
+    var_orig = np.var(filt_signal)
+    snr = var_orig / var_err if var_err > 0 else np.inf
+    var_errors.append(var_err)
+    snr_values.append(snr)
+
+#Побудова графіку цифрових сигналів
+titles_quant = [f'Квантування, M={M}' for M in M_values]
+save_grid_plot(quantized_signals, time, titles_quant,
+               'Цифрові сигнали з рівнями квантування (4, 16, 64, 256)',
+               'Час (с)', 'Амплітуда', 'quant_signals_grid')
+
+#Залежність дисперсії від M
+plt.figure(figsize=(21 / 2.54, 14 / 2.54))
+plt.plot(M_values, var_errors, 'o-', linewidth=2, markersize=8)
+plt.xlabel('Кількість рівнів квантування M', fontsize=14)
+plt.ylabel('Дисперсія', fontsize=14)
+plt.title('Залежність дисперсії від кількості рівнів квантування', fontsize=14)
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.savefig(f'{figures_dir}/var_vs_M.png', dpi=600, bbox_inches='tight')
+plt.close()
+
+#Залежність відношення сигнал/шум від M
+plt.figure(figsize=(21 / 2.54, 14 / 2.54))
+plt.plot(M_values, snr_values, 'o-', linewidth=2, markersize=8)
+plt.xlabel('Кількість рівнів квантування M', fontsize=14)
+plt.ylabel('ССШ', fontsize=14)
+plt.title('Залежність співвідношення сигнал/шум від кількості рівнів квантування', fontsize=14)
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.savefig(f'{figures_dir}/snr_vs_M.png', dpi=600, bbox_inches='tight')
 plt.close()
