@@ -111,13 +111,13 @@ def main():
     seq_names = [f"Послідовність {i+1}" for i in range(8)]
 
     #Збереження послідовностей у файл
-    with open("sequence.txt", "w", encoding="utf-8") as f:
+    with open("all_results/sequence.txt", "w", encoding="utf-8") as f:
         for seq in sequences:
             f.write(seq + "\n")
 
     #Аналіз та запис результатів
     results = []
-    with open("results_sequence.txt", "w", encoding="utf-8") as f:
+    with open("all_results/results_sequence.txt", "w", encoding="utf-8") as f:
         for i, (seq, name) in enumerate(zip(sequences, seq_names), start=1):
             prob, alph_size, entropy, excess, uniform = analyze_seq(seq, name)
             results.append((alph_size, round(entropy, 2), round(excess, 2), uniform))
@@ -142,7 +142,8 @@ def main():
     table = ax.table(cellText=results, colLabels=headers, rowLabels=row_labels, loc='center', cellLoc='center')
     table.set_fontsize(14)
     table.scale(0.8, 2)
-    plt.savefig("feature.png", bbox_inches='tight', dpi=150)
+    #При виконанні 5 практичної не дочитала як саме необхідно назвати файл, передивилась файл при виконанні 6 і виправила
+    plt.savefig("all_results/Характеристики сформованих послідовностей.png", bbox_inches='tight', dpi=150)
     plt.close()
 
 if __name__ == "__main__":
